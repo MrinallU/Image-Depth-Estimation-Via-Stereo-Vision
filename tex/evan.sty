@@ -63,7 +63,7 @@
 \newif\ifevanhints\evanhintsfalse
 \newif\ifevanasy\evanasytrue
 \newif\ifevancolorsec\evancolorsecfalse
-\newif\ifevantitlemark\evantitlemarktrue
+\newif\ifevantitlemark\evantitlemarkfalse
 \newif\ifevanvonenabled\evanvonenabledfalse
 
 %Receive Arguments
@@ -89,7 +89,7 @@
 \DeclareOption{nopdf}{\evanpdffalse}
 \DeclareOption{nopkg}{\evanpkgfalse}
 \DeclareOption{noauthor}{\evanauthorfalse}
-\DeclareOption{titlemark}{\evantitlemarktrue} % Sets title in ohead, not \rightmark
+\DeclareOption{titlemark}{\evantitlemarkfalse} % Sets title in ohead, not \rightmark
 \DeclareOption{sectionmark}{\evantitlemarkfalse} % Uses \rightmark not title in ohead
 
 \DeclareOption{mdthm}{\evanmdthmtrue}
@@ -341,7 +341,7 @@
 		\usepackage{xcolor}
 		\ifevanhref
 			\usepackage[colorlinks=true]{hyperref}
-			\hypersetup{urlcolor=RubineRed,linkcolor=RedViolet,citecolor=ForestGreen}
+			\hypersetup{urlcolor=RubineRed,linkcolor=black,citecolor=ForestGreen}
 		\fi
 		\usepackage[nameinlink]{cleveref}
 	\fi
