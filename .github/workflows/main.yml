@@ -10,5 +10,6 @@ jobs:
     steps:
       - uses: xu-cheng/latex-action@v2
         with:
-         root_file: "*.tex"
-         glob_root_file: true
+          root_file: |
+            main.tex
+          working_directory: "tex"
