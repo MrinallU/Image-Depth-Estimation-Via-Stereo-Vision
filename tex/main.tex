@@ -27,19 +27,47 @@
 
 \newpage
 \section{Introduction}
+One of the most explored problems in the field of computer vision is the process
+of accruately estimating the real-world depth of a pixel within a two dimensional
+image. The inference of three dimensional information is done by using multiple two
+dimensional views of a scene, the process being demmed the name stereo vision. 
 
-What is stereo vision?
+\subsection{Applications}
+A common counter-argument to the practicality of stereo vision algorithms 
+are the presence of other sensors that do not make use of visual data such 
+as ultrasonic or time of flight distance sensors. While these sensors are not
+not impacted by factors that would be detrimental to the accuracy of stereo 
+vision algorithms such as the lack of adequete lighting,  
+"stereo vision has the advantage that it achieves the 3-D acquisition without 
+energy emission or moving parts" (https://research.csiro.au/qi/stereo-vision/). Moreover,
+whereas traditional distance sensors focus on a singular point in space, stereo vision 
+algorithms are only limited by the camera's field of view, making the depth analysis
+large area far more simple and cost effective. Finally, stereo vision algorithms are able 
+to easily work in conjunction with other 
+computer visision techniques such as machine leanrning based object detection
+models when compared to the previous depth estimation approaches as it already
+tracks depth on the same image plane that a object detection model may be implemented on.
+These factors allow for a far greater analysis of the 
+various shapes and angles in an image leading to its usage in various fields. 
+\\ 
 
-\subsection{Applications}    
-
-
-
-
-
-
+A common applications for stereo vision algorithms is in the quality
+control process of industrial factories. Factories must analyze each
+finshed product for deformities in order to maintian a standard of quality in their 
+products. However, many factories output a high volume of product every day meaning that
+the human anlysis of such product would be far too expensive and inefficeint when
+considering the large amounts of workers needed to manually inspect each products
+as well as the time it takes for the inspection of a product. The installation of multiple
+distance sensors in order to analyze each sqaure inch of a product would also be far too expensive. 
+However, becuase the factory is in a controlled environment with uniform lighting and the object is one
+of known shape, the usage of a stereo vision algorithm would be ideal for the situation as stereo cameras 
+are able to analyze objects with their large field of view and can easily detect deformities as the object 
+being analyzed is of known geometry, meaning the algorithm can compare each depth point of the current object 
+to the depth of a model product, reporting any deformities both accuratly and efficiently.  and can easily detect deformities as the object 
+being analyzed is of known geometry, meaning the algorithm can compare each depth point of the current object 
+to the depth of a model product, reporting any deformities both accuratly and efficiently. 
 
 \section{Triangulation}
-
 Core of the algorithm
 
 \subsection{Forward Projection Model}
@@ -94,7 +122,8 @@ Core of the algorithm
 
 \section{Stereo Rectification}
 
-\subsection{Window Based Algorithm}
+\subsection{Window Based SSD Disparity Estimation}
+\subsection{Adaptible Window Optimizations}
 \begin{remark}
     % paragraph paragraph name (end)
     Notes{\begin{enumerate}
@@ -104,9 +133,12 @@ Core of the algorithm
             a minimmum squared difference algorithm on the average intensity of the window. 
     \end{enumerate}} % (fold)
     \label{par:Notes}
+
     
     % paragraph paragraph name (end)
 \end{remark}
+
+\subsection{Dynamic Programming Based Disparity Estimation}
 
 \section{Implementation}
 
