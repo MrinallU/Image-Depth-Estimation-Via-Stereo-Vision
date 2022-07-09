@@ -1,4 +1,3 @@
-
 \documentclass[11pt]{scrartcl}
 \usepackage{answers}
 \Newassociation{sketch}{hintitem}{hints}
@@ -7,7 +6,8 @@
 \usepackage[sexy]{evan}
 \newcommand\EE{\mathbb E}
 \newcommand\PP{\mathbb P}
-
+\usepackage{graphicx}
+\usepackage{wrapfig}
 \begin{document}
 \title{Image Depth Estimation Using Stereo Vision}
 \author{Mrinall Umasudhan}
@@ -26,46 +26,88 @@
 % ploh handouts
 
 \newpage
+
 \section{Introduction}
 One of the most explored problems in the field of computer vision is the process
-of accruately estimating the real-world depth of a pixel within a two dimensional
+of accurately estimating the real-world depth of a pixel within a two dimensional
 image. The inference of three dimensional information is done by using multiple two
-dimensional views of a scene, the process being demmed the name stereo vision. 
+dimensional views of a scene, the process being deemed the name stereo vision. 
 
 \subsection{Applications}
 A common counter-argument to the practicality of stereo vision algorithms 
 are the presence of other sensors that do not make use of visual data such 
 as ultrasonic or time of flight distance sensors. While these sensors are not
 not impacted by factors that would be detrimental to the accuracy of stereo 
-vision algorithms such as the lack of adequete lighting,  
+vision algorithms such as the lack of adequate lighting,  
 "stereo vision has the advantage that it achieves the 3-D acquisition without 
 energy emission or moving parts" (https://research.csiro.au/qi/stereo-vision/). Moreover,
 whereas traditional distance sensors focus on a singular point in space, stereo vision 
 algorithms are only limited by the camera's field of view, making the depth analysis
 large area far more simple and cost effective. Finally, stereo vision algorithms are able 
 to easily work in conjunction with other 
-computer visision techniques such as machine leanrning based object detection
+computer vision techniques such as machine learning based object detection
 models when compared to the previous depth estimation approaches as it already
 tracks depth on the same image plane that a object detection model may be implemented on.
 These factors allow for a far greater analysis of the 
 various shapes and angles in an image leading to its usage in various fields. 
 \\ 
+\begin{wrapfigure}{R}{0.5\textwidth}
+\centering
+\includegraphics[width=0.5\textwidth]{img1.png}
+\caption{\label{fig:frog1}Stereo Vision For Road Deformity Detection}
+\end{wrapfigure}
 
-A common applications for stereo vision algorithms is in the quality
+A common application of stereo vision algorithms is in the quality
 control process of industrial factories. Factories must analyze each
-finshed product for deformities in order to maintian a standard of quality in their 
+finished product for deformities in order to maintain a standard of quality in their 
 products. However, many factories output a high volume of product every day meaning that
-the human anlysis of such product would be far too expensive and inefficeint when
+the human analysis of such product would be far too expensive and inefficient when
 considering the large amounts of workers needed to manually inspect each products
 as well as the time it takes for the inspection of a product. The installation of multiple
-distance sensors in order to analyze each sqaure inch of a product would also be far too expensive. 
-However, becuase the factory is in a controlled environment with uniform lighting and the object is one
+distance sensors in order to analyze each square inch of a product would also be far too expensive. 
+However, because a factory is in a controlled environment with uniform lighting and the object is one
 of known shape, the usage of a stereo vision algorithm would be ideal for the situation as stereo cameras 
 are able to analyze objects with their large field of view and can easily detect deformities as the object 
 being analyzed is of known geometry, meaning the algorithm can compare each depth point of the current object 
-to the depth of a model product, reporting any deformities both accuratly and efficiently.  and can easily detect deformities as the object 
+to the depth of a model product, reporting any deformities both accurately and efficiently.  and can easily detect deformities as the object 
 being analyzed is of known geometry, meaning the algorithm can compare each depth point of the current object 
-to the depth of a model product, reporting any deformities both accuratly and efficiently. 
+to the depth of a model product, reporting any deformities both accurately and efficiently. \\
+
+A paper done by the University of Bristol explored deformity analysis preformed by stereo algorithms
+further by acquiring three dimensional road data for autonomous cars further displaying the 
+capabilities of stereo algorithms. The process which this algorithm follows can be seen in the 
+figure above. 
+
+\subsection{Overview and Purpose}
+
+The essence of many successful stereo vision algorithms can be summarized in three key steps:
+{\begin{enumerate}
+
+    \item Triangulation: The process of assigning depth values to each pixel in the image 
+        using multiple two dimensional views of a scene and the specific parameters from
+        camera hardware, difference in location of the cameras used, and the disparity in the 
+        pixels from each view of the scene.
+    \item Calibration: The process of correcting image distortion caused by the 
+        spherical geometry of the camera lens 
+        and reifying the two dimensional views of the scene such that 
+        the objects in study are on the same plane. 
+    \item Pixel Correspondence: In order to apply the triangulation process the algorithm must be 
+        able to match a pixel from one view of the scene to another view taken from a separate camera 
+        also known as the disparity value of this pixel.  
+\end{enumerate}}
+
+\\
+
+In modern research, the most studied step of the algorithm is the process of pixel Correspondence, 
+better known as stereo matching. As of now there are many optimization techniques being applied 
+to stereo matching algorithms in order to increase their efficiency and accuracy. Firstly, this paper explains 
+the math and logic behind each portion of a successful stereo vision system while providing implementations.  finding value in optimization techniques 
+when compared to more standard stereo matching approaches. In order to analyze and implement a sound stereo vision algorithm 
+as well as a optimized matching algorithm scholarly sources were regarding stereo vision and optimization 
+techniques for pixel correspondence. After implementing a standard matching algorithm as well as another using 
+the optimization technique known as dynamic programming, I found that there was a significant increase
+in both accuracy and efficiency in the depth estimates provided from the algorithm. 
+
 
 \section{Triangulation}
 Core of the algorithm
