@@ -81,20 +81,20 @@ figure above.
 \subsection{Overview and Purpose}
 
 The essence of many successful stereo vision algorithms can be summarized in three key steps:
-{\begin{enumerate}
 
-  \item Triangulation: The process of assigning depth values to each pixel in the image
+ 
+  \paragraph{ Triangulation} The process of assigning depth values to each pixel in the image
         using multiple two dimensional views of a scene and the specific parameters from
         camera hardware, difference in location of the cameras used, and the disparity in the
         pixels from each view of the scene.
-  \item Calibration: The process of correcting image distortion caused by the
+    \paragraph{ Calibration} The process of correcting image distortion caused by the
         spherical geometry of the camera lens
         and reifying the two dimensional views of the scene such that
         the objects in study are on the same plane.
-  \item Pixel Correspondence: In order to apply the triangulation process the algorithm must be
+  \paragraph{Pixel Correspondence} In order to apply the triangulation process the algorithm must be
         able to match a pixel from one view of the scene to another view taken from a separate camera
         also known as the disparity value of this pixel.
-\end{enumerate}}
+\\
 
 \\
 
@@ -206,7 +206,10 @@ the full scene coordinate frame:
       $y$     & $y$ position in scene coordinate frame   & $o_y$ & image center on y-axis \\
         $z$     & depth of point in scene coordinate frame  &$b$ & baseline distance \\
     \end{tabular}
-  \end{figurekey}
+  \end{figurekey} \\ \\
+    Note that the pixel coordinates in the left and right camera point at the same object in 
+    the scene. However, because the cameras are located $b$ units away from each other, 
+    the coordinates are unique creating the pixel coorespondance problem. 
 \end{theorem}
 
 The two rays projected from the camera, along with the calibrated basline measurement (distance
@@ -214,43 +217,181 @@ between left and right cameras) form a triangle, allowing for the derivations of
 shown above. However, in order to attain the parameters in these formulas that are not 
 immediatly present in the image such as focal length, and the baseline as well as correcting
 for lense distortion camera calibration is required. Moreover, in order to make use of the ray 
-projected from the additional viewpoint, 
+projected from the additional viewpoint, the corresponding pixel from the right camera must be 
+found with through additional algorithms. 
 
 
 \section{Camera Calibration}
 
+In order for the triangulation formulas to apply all cameras in the stereo 
+system must be calibrated to match the pinhole camera model. This involves
+finding the hardware parameters of the camera and correcting the images 
+returned for lense distortion. Moreover, the images must be transfored such 
+that they are displayed parallel to each other. 
+
 \subsection{Intrinsic matrix}
+
+A key step in correcting for lense distortion and applying the triangulation formulas
+is identifiying the instrinsic parameters of both cameras. Formally explained, the 
+instrinsic parameters are the variables used in the forward projection equations in order
+to map 3D scene coordinates into image coordinates, such as the focal length and optical
+center of the image. The intrinsic parameters of a camera are mathematically contained in 
+a 3 by 3 matrix known as the instrinsic matrix. The forward projection equation can be 
+rewritted in matrix form to show this: 
+
+\begin{theorem}[Forward Projection Equation Matrix Variation]
+     \begin{displaymath}
+    \begin{bmatrix}
+      u \\
+      v \\
+      w
+    \end{bmatrix} &=
+    \begin{bmatrix}
+      f_x & 0 & o_x \\
+      0 & f_y & o_y \\
+      0 & 0 & 1
+    \end{bmatrix}
+    \begin{bmatrix}
+      X \\
+      Y \\
+      Z
+    \end{bmatrix} 
+  \end{displaymath}
+  \begin{figurekey}
+    \begin{tabular}{llll}
+      $(u,v)$ & two dimensional pixel coordinates        & $f_x$ & focal length on x-axis \\
+      $X$   & $x$ position on scene coordinate frame   & $f_y$ & focal length on y-axis \\
+      $Y$   & $y$ position in scene coordinate frame   & $o_x$ & image center on x-axis \\
+      $Z$   & depth of point in scene coordinate frame & $o_y$ & image center on y-axis \\
+    \end{tabular}
+  \end{figurekey}
+
+\end{theorem}
+
+The parameters of the intrinsic matrix can be found by making use of the field of view 
+and resolution of the camera of the camera, typically stated in the hardware specifications of the camera. The 
+formulas are described below: 
+
+\begin{theorem}
+  [Instrinsic Matrix Calculation]
+
+  \begin{align}
+      f_x & = \displaystyle\frac{o_x}{\tan{\displaystyle\frac{a_x}{2}}} \\
+    f_y & = \displaystyle\frac{o_y}{\tan{\displaystyle\frac{a_y}{2}}}  \\
+    o_x & = \displaystyle\frac{r_x}{2} \\ 
+    o_y & = \displaystyle\frac{r_y}{2} \\ 
+  \end{align}
+
+  \begin{figurekey}
+    \begin{tabular}{llll}
+      $(u_l,v_l)$ & pixel coordinates on left camera     & $f_x$ & focal length on x-axis \\
+      $(u_r,v_r)$ & pixel coordinates on right camera   & $f_y$ & focal length on y-axis \\
+      $x$     & $x$ position on scene coordinate frame  & $o_x$ & image center on x-axis \\
+      $y$     & $y$ position in scene coordinate frame   & $o_y$ & image center on y-axis \\
+        $z$     & depth of point in scene coordinate frame  &$b$ & baseline distance \\
+    \end{tabular}
+  \end{figurekey} \\ \\
+    Note that the pixel coordinates in the left and right camera point at the same object in 
+    the scene. However, because the cameras are located $b$ units away from each other, 
+    the coordinates are unique creating the pixel coorespondance problem. 
+\end{theorem}
+
+
+
+\subsection{Extrinsic Parameters}
+
+The extrinsic parameters of a camera refer to the position and orientation of the camera 
+with respect to the world coordinate frame and corresponding cameras. In more complex 
+stereo systems an extrinsic matrix is required, detailing the translation of the camera 
+in the $x$, $y$, and $z$ axis as well as the roll, pitch, and yaw angles of the cameras. 
+However, because a binocular stereo system is used, the two cameras are garunteed to 
+be pointing in a straight line, while being on the same $y$ and $z$ axis leaving only 
+a horizontal distance that can easily be manually computed. The baseline ($b$) is measured 
+by finding the distance between the centers of the left and rightmost camera. 
+
 \begin{remark}
-  % paragraph paragraph name (end)
-  Notes{\begin{enumerate}
-        \item  External Parameters: Position and Orientation of the camera with respect to the world coordinate frame\dots
-        \item Internal Parameters: How the camera maps world points into the image coordinate frame.
-        \item For the case of this program becuase of camera model was constructed to match an ideal model, we only need to make use of two variables the focal length and the distnce between the two cameras d.
-        \item Use this as a good guide for the process: https://medium.com/swlh/i-see-you-computer-vision-fundamentals-64cc662d0b05.
-              Essentianlly use an mage of known geometry and rearange the original projection eqations to find both the fx anf fy
-        \item In many modern cameras, the lenses are contructed in such a manner that pixel quality is maximized, however the shape of these lense
-              can lead to singificant distortion in the image taken when compared to the true real world position.
-        \item There consists of two types of distortion \textbf{radial and tangential}
-        \item In the paper you can describe the correction equation as well as what they algo:ref
-              but in the actual Implementation you would have to use the built in function since a custom distorition function is way to complex
-              , have a custom intrinsic and extrinsic matrix computation tool though.
-      \end{enumerate}} % (fold)
-  \label{par:Notes}
-
-  \subsection{Extrinsic Parameters}
-
-  \subsection{Lens Distortion}
-
-  \subsubsection{Radial Distortion}
-  \subsubsection{Tangential Distortion}
-
-
-  % paragraph paragraph name (end)
+    Becuase a simple stereo is used, the cameras are garunteed to be positioned 
+    such the $y$ position of the camera is identical, removing the need of additional 
+    calibration beyond the manual baseline measurement. 
 \end{remark}
 
-\section{Stereo Rectification}
+\subsection{Lens Distortion}
+\begin{remark}
+    Images from: https://www.tangramvision.com/blog/camera-modeling-exploring-distortion-and-distortion-models-part-i#tangential-de-centering-distortions
+    \\ Text from: https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html  
+\end{remark}
+The simple stereo model assumes that both cameras in use do not contain lenses. 
+However, in real-world situations lenses must be present in order to ensure pixel 
+quality. This results in two types of distortion which must be accounted for when
+calibrating cameras.  
+\paragraph{Radial Distortion}
+    This variation of distortion causes "straight lines in images to appear curved" (h)
+    Moreover, as pixels begin to deviate from the image center, distortion increases rapidly, 
+    causing significant drops in accuracy when querying depth. 
+\paragraph{Tangential Distortion}
+    As opposed to radial distortion, tangential distortion causes some areas in the image to appear 
+    closer than others due to the misalignment of the lense from the image plane. 
+\\
+\begin{figure}[!htb]
+    \centering
+    \subfloat[\centering Radial]{{\includegraphics[width=4cm]{radial.png} }}%
+    \qquad
+    \subfloat[\centering Tangential]{{\includegraphics[width=4cm]{tang.png} }}%
+    \label{fig:example}% 
+    \caption{Impacts of Distortion on the Image Plane}
+\end{figure}
+\\ 
+
+\subsection{Accounting for distortion}
+
+The transformation process between raw and distorted pixels can be modelled using the 
+formulas below: 
+
+\begin{theorem}
+    [Radial Distortion Equations] 
+    \begin{align}
+    x_{distorted} = x( 1 + k_1 r^2 + k_2 r^4 + k_3 r^6) 
+    \\ y_{distorted} = y( 1 + k_1 r^2 + k_2 r^4 + k_3 r^6)    
+    \end{align}
+    
+\end{theorem}
+
+
+\begin{theorem}
+    [Tangential Distortion Equations] 
+    \begin{align}
+        x_{distorted} = x + [ 2p_1xy + p_2(r^2+2x^2)]  
+       \\ y_{distorted} = y + [ p_1(r^2+ 2y^2)+ 2p_2xy]
+    \end{align}
+    
+\end{theorem}
+
+As seen in the formulas the distortion is maginified through the following distortion coefficients: 
+\begin{displaymath}
+    Distortion \; coefficients=(k_1 \hspace{10pt} k_2 \hspace{10pt} p_1 \hspace{10pt} p_2 \hspace{10pt} k_3)
+\end{displaymath}
+
+By finding these components and transforming the pixels accordingly, the cameras are then 
+completely calibrated. They are found by analyzing multiple images of known geometry and 
+comparing the pixels in the camera with the real-world coordinates of the image. However, 
+instead of completeing this process manually OpenCV, the framework being used, automates this 
+process through built in functions, meaning only a conceptual understanding of lense distortion 
+is needed to proceed. 
+
+\section{Pixel Correspondence}
+
+As mentioned prior, the pixel correspondence problem is the most studied are in the 
+field of stereo vision and by extension, the main focus of this paper. The correspondence 
+problem boils down to interating through each pixel in the left camera and finding the 
+corresponding pixel in the right camera in a efficient and accurate manner. In this paper, 
+two methods will be analyzed, a standard window based approach as well as a newer apprach 
+using a optimization technique known as Dynamic Programming (DP). After implementation, the 
+two appraches will both be tested using the same stereo system in order to reveal differences 
+in accuracy and speed in order to determine the value in the usage of optimization algorithms, 
+such as DP in computer vision. 
 
 \subsection{Window Based SSD Disparity Estimation}
+
 \subsection{Adaptible Window Optimizations}
 \begin{remark}
   % paragraph paragraph name (end)
