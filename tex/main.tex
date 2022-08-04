@@ -6,6 +6,7 @@
 \usepackage[sexy]{evan}
 \newcommand\EE{\mathbb E}
 \newcommand\PP{\mathbb P}
+\usepackage{algorithm,algorithmicx,algpseudocode}
 \usepackage{graphicx}
 \usepackage{wrapfig}
 \begin{document}
@@ -15,10 +16,10 @@
 \maketitle
 \Opensolutionfile{hints}
 
-\begin{abstract}
-  Candidate ID: \mailto{943289432}.
-\end{abstract}
 
+\begin{abstract}
+  Word Count: \mailto{2800}.
+\end{abstract}
 %TOC
 \tableofcontents
 
@@ -209,7 +210,9 @@ the full scene coordinate frame:
   \end{figurekey} \\ \\
     Note that the pixel coordinates in the left and right camera point at the same object in 
     the scene. However, because the cameras are located $b$ units away from each other, 
-    the coordinates are unique creating the pixel coorespondance problem. 
+    the coordinates are not equal. The process of findinding the corresponding pixel in the 
+    right camera for every pixel in the left camera, is known as the stereo correspondence 
+    problem. 
 \end{theorem}
 
 The two rays projected from the camera, along with the calibrated basline measurement (distance
@@ -217,8 +220,10 @@ between left and right cameras) form a triangle, allowing for the derivations of
 shown above. However, in order to attain the parameters in these formulas that are not 
 immediatly present in the image such as focal length, and the baseline as well as correcting
 for lense distortion camera calibration is required. Moreover, in order to make use of the ray 
-projected from the additional viewpoint, the corresponding pixel from the right camera must be 
-found with through additional algorithms. 
+projected from the additional viewpoint the corresponding pixel from the right camera must be 
+found, this can be seen in the calculation of the depth as the $x$ value of the selected pixel 
+in the right camera is subtracted by the $x$ value of the corresponding pixel of the left camera, this 
+value is formally known as the disparity of a pixel $(u_r-u_l)$ and is essential to depth computation. 
 
 
 \section{Camera Calibration}
@@ -316,10 +321,8 @@ by finding the distance between the centers of the left and rightmost camera.
 \end{remark}
 
 \subsection{Lens Distortion}
-\begin{remark}
-    Images from: https://www.tangramvision.com/blog/camera-modeling-exploring-distortion-and-distortion-models-part-i#tangential-de-centering-distortions
-    \\ Text from: https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html  
-\end{remark}
+    %Images from: https://www.tangramvision.com/blog/camera-modeling-exploring-distortion-and-distortion-models-part-i#tangential-de-centering-distortions
+     %Text from: https://docs.opencv.org/4.x/dc/dbb/tutorial_py_calibration.html  
 The simple stereo model assumes that both cameras in use do not contain lenses. 
 However, in real-world situations lenses must be present in order to ensure pixel 
 quality. This results in two types of distortion which must be accounted for when
@@ -334,9 +337,9 @@ calibrating cameras.
 \\
 \begin{figure}[!htb]
     \centering
-    \subfloat[\centering Radial]{{\includegraphics[width=4cm]{radial.png} }}%
+    \subfloat[\centering Radial]{{\includegraphics[width=5cm]{radial.png} }}%
     \qquad
-    \subfloat[\centering Tangential]{{\includegraphics[width=4cm]{tang.png} }}%
+    \subfloat[\centering Tangential]{{\includegraphics[width=5cm]{tang.png} }}%
     \label{fig:example}% 
     \caption{Impacts of Distortion on the Image Plane}
 \end{figure}
@@ -385,29 +388,113 @@ field of stereo vision and by extension, the main focus of this paper. The corre
 problem boils down to interating through each pixel in the left camera and finding the 
 corresponding pixel in the right camera in a efficient and accurate manner. In this paper, 
 two methods will be analyzed, a standard window based approach as well as a newer apprach 
-using a optimization technique known as Dynamic Programming (DP). After implementation, the 
+using a optimization technique known as Dynamic Programming (DP) which in theory will increase 
+the program's accuracy and runtime. After implementation, the 
 two appraches will both be tested using the same stereo system in order to reveal differences 
 in accuracy and speed in order to determine the value in the usage of optimization algorithms, 
 such as DP in computer vision. 
 
 \subsection{Window Based SSD Disparity Estimation}
+This method of finding corresponding pixels in two cameras uses a window based approach. 
+Formally defined a window consists of a $n$ by $n$ grid of pixels. In order to find the 
+corresponding pixel in another camera, the algorithm creates a fixed window the chosen pixel. 
+Then on the corresponding row of the second camera, another window is created; however, 
+this window is not fixed, rather the algorithm slides the window over every other pixel 
+on the row of the second image. The window that is most simmilar with the fixed window 
+of the first camera is noted at the corresponding pixel. This process is then repeated 
+for every pixel in the image in order to apply the triangulation formulas and calculate the 
+real-world depth of the scene. 
+\\
+\\
+Rather than directly comparing individual pixels, using a window of pixels 
+are less resistant to noise and have enough variation to form a pattern, 
+esspecially when two individual pixels may easily have the same value. The image 
+below shows the window iteration and comparison process across images described above:
 
-\subsection{Adaptible Window Optimizations}
+\begin{figure}[!htb]
+    \centering
+    \subfloat{{\includegraphics[width=12cm]{SSD.jpg} }}%
+    \caption{Window Based Correspondence Illustration}
+\end{figure}
+
+
 \begin{remark}
-  % paragraph paragraph name (end)
-  Notes{\begin{enumerate}
-        \item Now that the two cameras have been calibrated such that they are on a identical image plane wiht one another you can now find the disparity between pixels of the two images in order to find depth using the triangulation model.
-        \item One way this may be done is through a window based method, where we search for the object selected in one image the seocnd by creating a window and linearly searching for identical pixels on the second image. This method may be done efficiently due to camera calibration as the pixel range is on the same scan line.
-        \item We can explore other methods of stereo rectification if we have time as the computation is pretty simple. You would have the use
-              a minimmum squared difference algorithm on the average intensity of the window.
-      \end{enumerate}} % (fold)
-  \label{par:Notes}
-
-
-  % paragraph paragraph name (end)
+    Because the cameras have been calibrated, the two images are garunteed to lie 
+    on the same y-axis, therefore the window only needs be transformed in one 
+    direction. 
+  % https://www.csd.uwo.ca/~oveksler/Courses/Winter2016/CS4442_9542b/L11-CV-stereo.pdf
 \end{remark}
+\\
+
+\begin{wrapfigure}{R}{0.45\textwidth}
+  \includegraphics[width=0.6\textwidth]{ex.jpg}
+  \caption{\label{fig:frog1} Sample Window Cost Calculation}
+\end{wrapfigure}
+
+One segment of the algorithm that has not been explained is how the simmilarty is 
+measured between two windows. Firstly, the image must be converted from the standard RGB format, 
+a full colored image with each pixel consisting of three color channels: red, green, and blue,  
+into a greyscale image. This is done such that each pixel is normalized from a value between 
+0 and 255, representing the intensity of light shining on each pixel, so that mathmatical 
+operations can be preformed easily without having to worry about the additional complexity 
+created by accounting for three color channels. After this, the algorithm makes use of a sum of squared differences apprach
+(SSD) to the windows, in which the squared difference is taken from each pixel in both windows. 
+These differences are then summed and stored for the pixel centered in the right camera's window. The 
+pixel in the right camera which has the minimmum cost is marked as the corresponding pixel 
+for the pixel centered in the fixed window of the left camera. The cost computation process 
+between two windows in the left and right images described above is shown by the
+illustration on the right: 
+\newpage
+
+The window iteration process and cost computation method are applied to each pixel in the 
+left image in order to attain a disparity map, a map linking each pixel in the left image 
+to the corresponding pixel in the right image, is created. This process can be seen in the 
+psuedocode below:
+\\
+\begin{algorithm}[!htb]
+    \floatname{algorithm}{Window Based Stereo Matching}
+    \algrenewcommand\algorithmicrequire{\textbf{Input: image, rows, columns }}
+    \algrenewcommand\algorithmicensure{\textbf{Output: disparityMap}}
+    \caption{}
+    \label{alg:}
+    \begin{algorithmic}[1]
+        \Require $input$
+        \Ensure $output$ 
+        \State $rows \gets rows-1$
+        \State $columns \gets columns-1$
+        \While{$rows \neq 0$}
+            \State $curCollumn \gets 1$
+            \While{$curCollumn \neq columns$}
+                \State $minimmumCost \gets \infinity$
+                \State $correspondingPixel \gets -1$
+                \State $slidingWindow \gets 1$
+                \While{$slidingWindow \neq columns$}
+                      \State $cost \gets getCost(rows, slidingWindow, curCollumn)$
+                      \If{$cost < minimmumCost$}
+                         \State $minimmumCost \gets cost$
+                         \State $correspondingPixel \gets curCollumn$
+                      \EndIf
+                \EndWhile
+            \EndWhile 
+            \State $disparityMap[rows][curCollumn] = correspondingPixel - curCollumn$
+        \EndWhile
+        \State \textbf{return} $disparityMap$
+    \end{algorithmic}
+\end{algorithm}
+
+\subsubsection{Drawbacks}
+While this algorithm is easy to implement and offers a reasonable amount of accuracy, there 
+are multiple shortcomings to the usage of this method. Firstly, creating multiple windows 
+acorss images as well as iterating through multiple windows may take a significant, 
+amount of processing time, especially as the resolution of the input image increases. 
+Moreover, making use of windows creates a problem 
+known as the window sizing problem.  Finally, there is no method to 
+determine whether a pixel being searched for is occluded or present which may lead to 
+significant error when computing depth. 
+
 
 \subsection{Dynamic Programming Based Disparity Estimation}
+
 
 \section{Implementation}
 
