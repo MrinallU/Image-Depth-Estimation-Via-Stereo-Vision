@@ -2,7 +2,7 @@
 \usepackage{answers}
 \Newassociation{sketch}{hintitem}{hints}
 \renewcommand{\solutionextension}{out}
-
+\usepackage{outlines}
 \usepackage[sexy]{evan}
 \newcommand\EE{\mathbb E}
 \newcommand\PP{\mathbb P}
@@ -16,9 +16,8 @@
 \maketitle
 \Opensolutionfile{hints}
 
-
 \begin{abstract}
-  Word Count: \mailto{2800}.
+  Word Count: \mailto{3986}.
 \end{abstract}
 %TOC
 \tableofcontents
@@ -249,8 +248,7 @@ rewritted in matrix form to show this:
     \begin{bmatrix}
       u \\
       v \\
-      w
-    \end{bmatrix} &=
+      w    \end{bmatrix} &=
     \begin{bmatrix}
       f_x & 0 & o_x \\
       0 & f_y & o_y \\
@@ -392,7 +390,7 @@ using a optimization technique known as Dynamic Programming (DP) which in theory
 the program's accuracy and runtime. After implementation, the 
 two appraches will both be tested using the same stereo system in order to reveal differences 
 in accuracy and speed in order to determine the value in the usage of optimization algorithms, 
-such as DP in computer vision. 
+such as DP in stereo vision. 
 
 \subsection{Window Based SSD Disparity Estimation}
 This method of finding corresponding pixels in two cameras uses a window based approach. 
@@ -450,7 +448,10 @@ The window iteration process and cost computation method are applied to each pix
 left image in order to attain a disparity map, a map linking each pixel in the left image 
 to the corresponding pixel in the right image, is created. This process can be seen in the 
 psuedocode below:
-\\
+\begin{remark}
+    The psuedocode below assumes a 3 by 3 window size as the code that will 
+    be used to analyze preformance will utilize the same dimensions. 
+\end{remark}
 \begin{algorithm}[!htb]
     \floatname{algorithm}{Window Based Stereo Matching}
     \algrenewcommand\algorithmicrequire{\textbf{Input: image, rows, columns }}
@@ -483,30 +484,214 @@ psuedocode below:
 \end{algorithm}
 
 \subsubsection{Drawbacks}
+% https://www.researchgate.net/publication/3192330_A_stereo_matching_algorithm_with_an_adaptive_window_Theory_and_experiment
+% image from https://www.csd.uwo.ca/~oveksler/Courses/Winter2013/CS4442_9542b/L14-CV-stereo.pdf
+\begin{wrapfigure}{R}{0.5\textwidth}
+  \includegraphics[width=0.7\textwidth]{winsize.png}
+    \caption{\label{fig:frog1} Window size compared to depth map (darker pixel shade refers to greater depth)}
+
+\end{wrapfigure}
+
+
 While this algorithm is easy to implement and offers a reasonable amount of accuracy, there 
 are multiple shortcomings to the usage of this method. Firstly, creating multiple windows 
 acorss images as well as iterating through multiple windows may take a significant, 
 amount of processing time, especially as the resolution of the input image increases. 
 Moreover, making use of windows creates a problem 
-known as the window sizing problem.  Finally, there is no method to 
+known as the window sizing problem. Formally defined the window problem states that 
+the window size must be large enough to include enough intensity variation for reliable matching
+, but small enough to avoid the effects of projective distortion". This means that when the 
+window size is too small, a inaccurate disparity measurement is given as the window does
+not account for differences in lighting around the pixel which may have significant effects on the cost function.
+On the other hand, when the window size is too large the disparty measurement may become inaccurate as it ignores
+the finer details in images and only gives singificance to bigger features. The figure on the right displays the 
+affects which a smaller and larger window may have when estimating depth depth. Finally, there is no method to 
 determine whether a pixel being searched for is occluded or present which may lead to 
 significant error when computing depth. 
 
-
+% https://www.youtube.com/watch?v=kxsvG4sSuvA
+% http://www.cs.umd.edu/~djacobs/CMSC426/Slides/stereo_algo.pdf
 \subsection{Dynamic Programming Based Disparity Estimation}
+As opposed to the previously described window based SSD algorithm, the current algorithm 
+in discussion makes use of a function which computes a "cost" of matching two pixels together. 
+By minimizing the sum of this cost function for each pixel in the image, the corresponding pixel 
+is found for every pixel in the image. This minimization process can be described belows:
+
+\begin{theorem}[Cost Function Minimization]
+    \begin{align}
+        cost & =  (leftPixel - rightPixel)^2 \\
+        d & = \displaystyle\sum_{leftPixel=1}^{N} cost(leftPixel,yPixel,disparity)
+    \end{align}
+    Note that the cost function can be arbitrarily assigned as the algorithm will 
+    minimize the function regardless. In this paper the cost function will be equal to the differences between pixel intesities 
+    will be squared, the same method which the window based algorithm uses except with the operation being formed 
+    on a singular pixel. 
+\end{theorem}
+
+% https://www.ri.cmu.edu/pub_files/pub4/ohta_y_1985_1/ohta_y_1985_1.pdf
+% http://www.cs.umd.edu/~djacobs/CMSC426/Slides/stereo_algo.pdf
+It is known that the sum of the cost function in all pixels must be minimized, but how can 
+the algorithm efficiently approach this problem? This is where Dynamic Programming (DP)
+must be used. DP is a optimization technique which increases runtime by breaking a general 
+problem into subproblems.  As mentioned previously, camera calibration garuntees that the corresponding 
+pixel in the left camera must be found in the same row in the right image. This allows for the 
+matching problem to transform into a well known weighted matching problem which is commonly  
+solved by DP. Imagine forming a $n$ by $n$ grid with n being the number of pixels in row 
+being studied in the image. This grid contains $n^2$ collumns with the cell in the 
+$i$th row and the $j$th collumn containing the cost of matching the $i$th pixel in the 
+left image's row with the $j$th pixel in the right image. By finding the shortest path, 
+smallest sum of weights, from the bottom left corner to the top right corner of this 
+grid the best possible matching configuration is found. DP solves this shortest path problem 
+by first solving the problem for smaller subrectangles of the entire grid. Moreover, because 
+the pixel matchings must be unique, "a feature in the left image can match to no more than one 
+feature in the right image", and the ordering must be monotonic, meaning that the path cannot 
+move backwards and must be moving in a diagnal manner. The method by which the algorithm constructs 
+the optimal path by making use of optimal path calculations from smaller subrectangles is shown below: 
+\[
+    \texttt{dp}[i][j] =
+\begin{cases}
+    \max(\texttt{dp}[i-1][j], \texttt{dp}[i][j-1]), \texttt{dp}[i-1][j-1]) + intensity[i][j] \\
+
+\end{cases}
+\]
+\begin{remark}
+    Formally explained, the figure above states that given the last cell of the grid 
+    is $(i,j)$, the first cell is $(1,1)$, and the path must not have any discontinuties, 
+    the second to last cell must be one of the following: $(i-1, j-1)$ , $(i, j-1)$ , or 
+    $(i-1, j)$. Thus by adding the value of cell $(i, j)$ to the paths ending on the previously
+    mentioned cells, all paths ending on $(i,j)$ are constructed. As such, this process of 
+    using optimal paths of previous subrectangles motivates the statement above. By repeating 
+    this process for every pixel in the grid, an optimal matching pattern for every pixel from 
+    $(1,1)$ to $(n,n)$. 
+\end{remark}
+
+\subsubsection{Advantages}
+
+\begin{wrapfigure}{R}{0.5\textwidth}
+  \includegraphics[width=0.4\textwidth]{dpG.png}
+    \caption{\label{fig:frog1} Example of optimal pixel matching path found by DP algorithm}
+\end{wrapfigure}
+\\ 
+There are many theoretical advantages of implememting
+a DP based algorithm over a window based algorithm. 
+As previously mentioned, DP allows for the reduction 
+of runtime from a polynomial $n^x$ operations into 
+a linear $n$ operations due to utilizing individual 
+pixel intensities. Moreover, making use of individual pixels 
+allows for the circumvention of the window sizing problems 
+associated with the SSD based algorithm, increasing accuracy 
+singnficantly. Finally, making use of DP allows the algorithm 
+to recognize when a pixel has no reasonable matches. This can be detected 
+as a valid path must be diagnal in nature; therefore when the pixel with the 
+lowest cost forms a straight line with the pixel in question, the pixel is marked 
+as occluded as including the pixel would lead to an unoptimal cost and by extension, 
+a unoptimal matching arrangement. The figure to the right illustrates the concept 
+of constructing an optimal path while detecting occlusions. 
+
 
 
 \section{Implementation}
+Now that the general components of the algorithm have been discussed, the implementation 
+and testing process can be described. 
 
-\subsection{Hardware}
-\subsection{Program}
+\subsection{Tools}
 
-\section{Testing}
+In order to create a rudimentary binocular strereo system, two logitech C270 
+webcams will attatched to a wooden apparatus at 3 inches apart. The camera's 
+will then be connected to a laptop in order to execute the program. In regards 
+to the software aspect of implementation, the Python programming language will 
+be used in conjunction with a widely used Computer Vision framework known as 
+OpenCV which allows the program to query image data from both cameras. The 
+overall structure of the code can be explained through the following outline:
 
-\section{Conclusion}
+
+
+\subsection{Testing}
+In order to test the algorithm, I created several varying scenes with variable surroundings 
+and lighting conditions in order to verify the speed and accuracy of which both correspondence
+algorithms preformed when inffering the depth of all objects on the scene. For this paper 
+major objects are classified as objects which are of singnificant size such that they are clearly 
+distinct from the background of a image. The figure to the right gives an example of a scene used 
+in testing. The outline below illustrates how all of the steps discussed in previous sections 
+combine in order to measure preformance of the correspondence algorithms in question. 
+\begin{outline}[enumerate]
+   \1 Query images from left and right cameras.  
+    \1 Calculate intrinsic and extrinsic parameters 
+   \1 Correct for Image Distortion 
+   \1 Start first timer 
+   \1 Start first window based stereo correspondence algorithm 
+   \1 End timer when correspondence algorithm is finished running and store time taken 
+   \1 Start second timer
+   \1 Run DP based correspondence algorithm 
+   \1 End timer when algorithm is finished running and store time taken
+   \1 Measure true accuracy rate compared with a purposefully placed object on the scene 
+        to true depth. 
+    \1 Store time taken and accuracy rates for data analysis. 
+    \1 Repeat for all test cases. 
+\end{outline}
+\section{Results and Conclusion}
+
+After running the algorithms against 20 various scenes, the following results were 
+produced:
+\\
+
+\begin{table}[H]
+\begin{tabular}{lll}
+\hline
+Scene & Window Correspondance Runtime (ms) & DP Correspondance Runtime (ms) \\ \hline
+1     & 1300                               & 302                            \\
+2     & 1173                               & 341                            \\
+3     & 1420                               & 629                            \\
+4     & 1912                               & 640                            \\
+5     & 1341                               & 452                            \\
+6     & 1119                               & 501                            \\
+7     & 1132                               & 643                            \\
+8     & 2016                               & 751                            \\
+9     & 1251                               & 364                            \\
+10    & 1762                               & 704                            \\ \hline
+\end{tabular}
+\end{table}
+
+\\
+\begin{table}[H]
+\begin{tabular}{lll}
+\hline
+Scene & Window Correspondance Error (in) & DP Correspondance Error (in) \\ \hline
+1     & 1.95                             & 0.34                         \\
+2     & 2.40                             & 1.12                         \\
+3     & 1.33                             & 0.78                         \\
+4     & 2.45                             & 0.51                         \\
+5     & 1.50                             & 1.20                         \\
+6     & 2.04                             & 0.83                         \\
+7     & 2.09                             & 1.33                         \\
+8     & 2.41                             & 0.35                         \\
+9     & 1.41                             & 0.47                         \\
+10    & 2.27                             & 1.20                         \\ \hline
+\end{tabular}
+\end{table}
+
+All in all, the results show that the DP based algorithm offers significantly lower 
+runtimes while returning a more accurate depth measurement compared to the window 
+based algorithm. The results align with the theoretical conlusion that a DP based 
+appreach is superiour to the standard method. However, the DP solution did not 
+eliminate error completely. This could have happened through human errors in measurement 
+when verifying distance or when manually entering extrinsic parameters such as the 
+baseline distance. Another possible explanation of such error may be associated with 
+a issue of making use of a stereo algorithm in which variations of lighting causes 
+misinterpretations of the cost function. As such, additional questions regarding the 
+validity of the concept of stereo systems as a whole can be brought into question. 
+There may be better methods of estimating image depth such as matching external sensor 
+data with image pixels, such as cutting edge LiDAR sensors. However, stereo vision systems 
+are able to offer low cost solutions to depth estimation in many situations and with 
+the additional value of optimization techniques such as DP, stereo systems continue to be 
+a feasible solution for attaining 3D understanding from images. 
+
+
+
+\section{Appendix}
+
 
 \section{Works Cited}
 
-\section{Appendix}
 
 \end{document}
